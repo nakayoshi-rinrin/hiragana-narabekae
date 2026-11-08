@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ひらがなならびかえ</title>
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+--bg:#fff4c9;--card:#fff;--ink:#4a3b2a;--main:#ff8a3d;--sub:#5cb8ff;--ok:#3ec46d;--ng:#ff5c7a;--slot:#ffe9b0}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#2b2438;--card:#3a3150;--ink:#fff3dc;--slot:#4b4066}}
+:root[data-theme="dark"]{--bg:#2b2438;--card:#3a3150;--ink:#fff3dc;--slot:#4b4066}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--ink);font-family:"Hiragino Maru Gothic ProN","Yu Gothic","Meiryo",sans-serif;display:flex;justify-content:center;align-items:center;text-align:center;user-select:none}
+.scr{display:none;width:100%;max-width:560px;padding:16px;flex-direction:column;align-items:center;gap:18px}
+.scr.on{display:flex}
+h1{font-size:clamp(34px,10vw,52px);margin:0;color:var(--main);text-shadow:0 3px 0 rgba(0,0,0,.1)}
+.hero{font-size:clamp(52px,16vw,84px);letter-spacing:6px;animation:bob 2s ease-in-out infinite}
+@keyframes bob{50%{transform:translateY(-10px)}}
+.btn{font:inherit;font-size:24px;font-weight:bold;color:#fff;background:var(--main);border:0;border-radius:40px;padding:14px 40px;box-shadow:0 6px 0 rgba(0,0,0,.18);cursor:pointer}
+.btn:active{transform:translateY(4px);box-shadow:0 2px 0 rgba(0,0,0,.18)}
+.btn.b{background:var(--sub)}
+.row{display:flex;gap:14px;flex-wrap:wrap;justify-content:center}
+.pic{font-size:clamp(90px,28vw,140px);background:var(--card);border-radius:32px;padding:8px 28px;box-shadow:0 6px 0 rgba(0,0,0,.1)}
+.prog{font-size:18px;font-weight:bold}
+.slots,.pool{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;min-height:64px}
+.slot,.tile{width:clamp(44px,13vw,62px);height:clamp(48px,14vw,66px);border-radius:14px;font:inherit;font-size:clamp(26px,8vw,36px);font-weight:bold;display:flex;align-items:center;justify-content:center}
+.slot{background:var(--slot);border:3px dashed rgba(0,0,0,.15);color:var(--ink);cursor:pointer;padding:0}
+.tile{background:var(--card);color:var(--ink);border:0;box-shadow:0 5px 0 rgba(0,0,0,.15);cursor:pointer;padding:0}
+.tile:active{transform:translateY(3px)}
+.tile.used{visibility:hidden}
+.msg{height:40px;font-size:28px;font-weight:bold}
+.msg.ng{color:var(--ng);animation:sh .4s}
+.msg.ok{color:var(--ok)}
+@keyframes sh{25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
+.slots.ok .slot{background:#b6f0c8;border-color:var(--ok)}
+.fs{position:fixed;top:calc(env(safe-area-inset-top,0px) + 10px);left:10px;font:inherit;font-size:15px;font-weight:bold;color:var(--ink);background:var(--card);border:0;border-radius:20px;padding:8px 14px;box-shadow:0 3px 0 rgba(0,0,0,.15);cursor:pointer}
+.fs:active{transform:translateY(2px)}
+.hint{font-size:18px;padding:10px 26px}
+.slot.ghost{color:#b5b5b5;cursor:default}
+.credit{font-size:13px;opacity:.7;margin-top:-4px}
+.big{font-size:clamp(26px,7vw,36px);font-weight:bold;line-height:1.5;margin:0}
+</style>
+</head>
+<body>
+
+<section class="scr on" id="top">
+  <button class="fs" id="fs" aria-label="全画面表示">⛶ 全画面</button>
+  <h1>ひらがなならびかえ</h1>
+  <div class="hero">🐶🍎🐘🌈</div>
+  <button class="btn" id="start">はじめる</button>
+  <div class="credit">きだっち＠明倫小</div>
+</section>
+
+<section class="scr" id="game">
+  <div class="prog" id="prog"></div>
+  <div class="pic" id="pic"></div>
+  <div class="slots" id="slots"></div>
+  <div class="msg" id="msg"></div>
+  <div class="pool" id="pool"></div>
+  <button class="btn b hint" id="hint">💡 ヒント</button>
+</section>
+
+<section class="scr" id="end">
+  <div class="hero">🎉🌟🎊</div>
+  <p class="big">おめでとう！<br>つぎもがんばろうね！</p>
+  <div class="row">
+    <button class="btn" id="again">もういちど</button>
+    <button class="btn b" id="quit">おわる</button>
+  </div>
+</section>
+
+<script>
+const RAW="🍎りんご 🍌ばなな 🍇ぶどう 🍓いちご 🍉すいか 🍊みかん 🍑もも 🍒さくらんぼ 🍅とまと 🥕にんじん 🌽とうもろこし 🍆なす 🥒きゅうり 🍋れもん 🍍ぱいなっぷる 🥔じゃがいも 🍠さつまいも 🎃かぼちゃ 🍄きのこ 🍞ぱん 🍙おにぎり 🍜らーめん 🍰けーき 🍦あいす 🍪くっきー 🍬あめ 🥚たまご 🥛ぎゅうにゅう 🐶いぬ 🐱ねこ 🐭ねずみ 🐰うさぎ 🐻くま 🐼ぱんだ 🐘ぞう 🦁らいおん 🐯とら 🐵さる 🐔にわとり 🐧ぺんぎん 🐸かえる 🐢かめ 🐍へび 🐟さかな 🐙たこ 🦀かに 🐌かたつむり 🐝はち 🦋ちょうちょ 🐴うま 🐮うし 🐷ぶた 🐑ひつじ 🐬いるか 🐳くじら 🦒きりん 🐜あり 🌂かさ 👟くつ 🧦くつした 🎒かばん 📖ほん 📏じょうぎ 🚗くるま 🚌ばす 🚲じてんしゃ 🚢ふね 🚃でんしゃ 🏠いえ 🏫がっこう ⚽さっかー ⚾やきゅう 🎹ぴあの 🎸ぎたー 🥁たいこ 📺てれび 🔑かぎ 🛏️べっど 🪑いす 🎈ふうせん 🎁ぷれぜんと 🔔べる 🧢ぼうし 👓めがね 👑おうかん 🥄すぷーん 🪥はぶらし 🚀ろけっと 🚁へりこぷたー 🚒しょうぼうしゃ 🚓ぱとかー ☀️たいよう 🌈にじ ⭐ほし 🌙つき 🔥ひ 🌸さくら 🌻ひまわり 🌷ちゅーりっぷ 🌳き 🍁もみじ ⛄ゆきだるま 🗻ふじさん 👂みみ 👄くち 🦷は 👀め";
+const WORDS=RAW.split(" ").map(s=>{const m=s.match(/^([^\p{L}]+)(.+)$/u);return{e:m[1],n:m[2]}});
+const $=id=>document.getElementById(id);
+const show=id=>{document.querySelectorAll(".scr").forEach(s=>s.classList.toggle("on",s.id===id))};
+const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]]}return a};
+
+/* 音 */
+let ac;
+function tone(f,t,d,type="sine",v=.2){
+  ac=ac||new (window.AudioContext||window.webkitAudioContext)();
+  const o=ac.createOscillator(),g=ac.createGain();
+  o.type=type;o.frequency.value=f;o.connect(g);g.connect(ac.destination);
+  const s=ac.currentTime+t;
+  g.gain.setValueAtTime(v,s);g.gain.exponentialRampToValueAtTime(.001,s+d);
+  o.start(s);o.stop(s+d);
+}
+const seq=(notes,gap,d,type)=>notes.forEach((f,i)=>tone(f,i*gap,d,type));
+const sndTap=()=>tone(660,0,.08,"triangle",.12);
+const sndOk=()=>seq([523,659,784,1047],.12,.3,"triangle");
+const sndNg=()=>seq([330,262],.15,.25,"sine");
+const sndClear=()=>seq([523,523,659,784,659,784,1047,1047,1319],.14,.35,"triangle");
+
+/* ゲーム */
+let qs,qi,ans,tiles,locked,hintOn=false;
+document.addEventListener("DOMContentLoaded",()=>{
+  $("hint").onclick=()=>{if(locked)return;sndTap();hintOn=!hintOn;draw()};
+});
+function start(){qs=shuffle(WORDS).slice(0,5);qi=0;show("game");load()}
+function load(){
+  const w=qs[qi];locked=false;
+  $("prog").textContent=`${qi+1} / 5 もんめ`;
+  $("pic").textContent=w.e;
+  $("msg").textContent="";$("msg").className="msg";
+  const ch=[...w.n];
+  let order;
+  do{order=shuffle(ch.map((c,i)=>i))}while(ch.length>1&&order.every((v,i)=>ch[v]===ch[i]));
+  tiles=order.map(i=>({c:ch[i],used:false}));
+  ans=[];hintOn=false;
+  draw();
+}
+function draw(){
+  const n=[...qs[qi].n].length;
+  const sl=$("slots");sl.className="slots";sl.innerHTML="";
+  for(let i=0;i<n;i++){
+    const b=document.createElement("button");b.className="slot";
+    if(ans[i]!==undefined){b.textContent=tiles[ans[i]].c;b.onclick=()=>remove(i)}
+    else if(hintOn){b.textContent=[...qs[qi].n][i];b.classList.add("ghost")}
+    sl.appendChild(b);
+  }
+  $("hint").textContent=hintOn?"💡 ヒントをけす":"💡 ヒント";
+  const p=$("pool");p.innerHTML="";
+  tiles.forEach((t,i)=>{
+    const b=document.createElement("button");b.className="tile"+(t.used?" used":"");
+    b.textContent=t.c;b.onclick=()=>add(i);p.appendChild(b);
+  });
+}
+function add(i){
+  if(locked||tiles[i].used)return;
+  sndTap();tiles[i].used=true;ans.push(i);
+  $("msg").textContent="";$("msg").className="msg";
+  draw();
+  if(ans.length===tiles.length)check();
+}
+function remove(pos){
+  if(locked||ans[pos]===undefined)return;
+  sndTap();
+  const [i]=ans.splice(pos,1);tiles[i].used=false;draw();
+}
+function check(){
+  const guess=ans.map(i=>tiles[i].c).join("");
+  if(guess===qs[qi].n){
+    locked=true;
+    $("slots").classList.add("ok");
+    $("msg").textContent="せいかい！";$("msg").className="msg ok";
+    if(qi===4){setTimeout(()=>{sndClear();show("end")},700)}
+    else{sndOk();setTimeout(()=>{qi++;load()},1300)}
+  }else{
+    locked=true;sndNg();
+    $("msg").textContent="もうちょっと";$("msg").className="msg ng";
+    setTimeout(()=>{ans=[];tiles.forEach(t=>t.used=false);locked=false;draw()},900);
+  }
+}
+
+$("start").onclick=start;
+const de=document.documentElement;
+const fsOn=()=>document.fullscreenElement||document.webkitFullscreenElement;
+const fsCan=de.requestFullscreen||de.webkitRequestFullscreen;
+if(!fsCan)$("fs").style.display="none";
+$("fs").onclick=()=>{
+  try{
+    if(fsOn()){(document.exitFullscreen||document.webkitExitFullscreen).call(document)}
+    else{(de.requestFullscreen||de.webkitRequestFullscreen).call(de)}
+  }catch(e){}
+};
+["fullscreenchange","webkitfullscreenchange"].forEach(ev=>document.addEventListener(ev,()=>{
+  $("fs").textContent=fsOn()?"⛶ もどす":"⛶ 全画面";
+}));
+$("again").onclick=start;
+$("quit").onclick=()=>show("top");
+</script>
+</body>
+</html>
